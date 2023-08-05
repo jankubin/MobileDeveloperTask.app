@@ -2,40 +2,40 @@
 //  DailyViewModel.swift
 //  MobileDeveloperTask
 //
-//  Created by Jan Kubín on 04.08.2023.
+//  Created by Jan Kubín on 08.08.2023.
 //
 
 import Foundation
 
-struct Response: Hashable, Codable {
-    let title: String
-}
-
-
 class DailyViewModel: ObservableObject {
-    @Published var daily: [Response] = []
+    @Published var daily: Daily?
     
-    func fetch() {
-        guard let url = URL(string: "https://api.nasa.gov/planetary/apod?api_key=zJyBH3jhtKmwTTvxa83aJV7gBioOq00jjHqfjNbG") else {
-            return
-        }
+    func getDaily() async throws -> Daily {
+        let endpoint = "https://api.nasa.gov/planetary/apod?api_key=zJyBH3jhtKmwTTvxa83aJV7gBioOq00jjHqfjNbG"
         
-        let task = URLSession.shared.dataTask(with: url) { data, _, error in
-            guard let data = data, error == nil else {
-                return
+        guard let url = URL(string: endpoint) else { throw DailyError.invalidURL }
+        
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        guard let response = response as? HTTPURLResponse, response.statusCode == 200 else { throw DailyError.invalidResponse }
+        
+        do {
+            let decoder = JSONDecoder()
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd" 
+            
+            var decodedDaily = try decoder.decode(Daily.self, from: data)
+            
+            
+            if let dateStr = decodedDaily.date, let date = dateFormatter.date(from: dateStr) {
+                dateFormatter.dateFormat = "dd.MM.yyyy"
+                let formattedDate = dateFormatter.string(from: date)
+                decodedDaily.date = formattedDate
             }
             
-            do {
-                let decoder = JSONDecoder()
-                let daily = try decoder.decode(Response.self, from: data)
-                DispatchQueue.main.async {
-                    self.daily = [daily]
-                }
-            } catch {
-                print(error)
-            }
+            return decodedDaily
+        } catch {
+            throw DailyError.invalidData
         }
-        task.resume()
     }
 }
-

@@ -10,12 +10,12 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         TabView {
-            //DailyView()
-               // .tabItem {
-                   // Image(systemName: "photo")
-                   // Text("Daily")
-              //  }
-            LaunchesView(viewModel: LaunchesViewModel())
+            DailyView()
+                .tabItem {
+                    Image(systemName: "photo")
+                    Text("Daily")
+               }
+            LaunchesView()
                 .tabItem {
                     Image(systemName: "note")
                     Text("Launches")
